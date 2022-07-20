@@ -1,32 +1,220 @@
-import { Navbar } from 'components';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { Cause, CausesResponse } from 'types/cause';
 
-const App = () => {
+function App() {
+  const [causes, setCauses] = useState<Cause[] | []>([]);
+  const [causesLeft, setCausesLeft] = useState<boolean>(false);
+  const [searchName, setSearchName] = useState<string>('');
+  const [searchCity, setSearchCity] = useState<string>('');
+  const [searchState, setSearchState] = useState<string>('');
+
+  console.log(causes);
+
+  useEffect(() => {
+    const getData = async () => {
+      const { data } = await axios.get<CausesResponse>(
+        'https://api.givebacks.com/services/core/causes/search'
+      );
+
+      setCauses(data.causes);
+
+      if (data.meta.has_more) {
+        setCausesLeft(true);
+      } else {
+        setCausesLeft(false);
+      }
+    };
+
+    getData().catch(console.error);
+  }, []);
+
+  const handleSearch = () => {
+    const baseURL = 'https://api.givebacks.com/services/core/causes/search?';
+    let nameURL = '';
+    let cityURL = '';
+    let stateURL = '';
+    let count = 0;
+
+    if (searchName) {
+      nameURL = `search[name][value]=${searchName}`;
+      count++;
+    }
+    if (searchCity) {
+      cityURL = `search[city][value]=${searchCity}`;
+      count++;
+    }
+    if (searchState) {
+      stateURL = `search[state][value]=${searchState}`;
+      count++;
+    }
+
+    if (count < 2) {
+      axios.get(`${baseURL}${nameURL}${cityURL}${stateURL}`).then((res) => {
+        setCauses(res.data.causes);
+        if (res.data.meta.has_more) {
+          setCausesLeft(true);
+        } else {
+          setCausesLeft(false);
+        }
+      });
+    } else {
+      axios
+        .get(`${baseURL}join=AND&${nameURL}&${cityURL}&${stateURL}`)
+        .then((res) => {
+          setCauses(res.data.causes);
+          if (res.data.meta.has_more) {
+            setCausesLeft(true);
+          } else {
+            setCausesLeft(false);
+          }
+        });
+    }
+  };
+
+  const handleKeyPress = (event) => {
+    if (event.key === 'Enter') {
+      const baseURL = 'https://api.givebacks.com/services/core/causes/search?';
+      let nameURL = '';
+      let cityURL = '';
+      let stateURL = '';
+      let count = 0;
+
+      if (searchName) {
+        nameURL = `search[name][value]=${searchName}`;
+        count++;
+      }
+      if (searchCity) {
+        cityURL = `search[city][value]=${searchCity}`;
+        count++;
+      }
+      if (searchState) {
+        stateURL = `search[state][value]=${searchState}`;
+        count++;
+      }
+
+      if (count < 2) {
+        axios.get(`${baseURL}${nameURL}${cityURL}${stateURL}`).then((res) => {
+          setCauses(res.data.causes);
+          if (res.data.meta.has_more) {
+            setCausesLeft(true);
+          } else {
+            setCausesLeft(false);
+          }
+        });
+      } else {
+        axios
+          .get(`${baseURL}join=AND&${nameURL}&${cityURL}&${stateURL}`)
+          .then((res) => {
+            setCauses(res.data.causes);
+            if (res.data.meta.has_more) {
+              setCausesLeft(true);
+            } else {
+              setCausesLeft(false);
+            }
+          });
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-      <Navbar />
-      <div className="max-w-screen-xl px-4 py-16 mx-auto sm:py-24 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <h1 className="my-3 text-4xl font-bold text-gray-800 sm:text-5xl sm:tracking-tight lg:text-8xl dark:text-gray-200">
-            Vite
-            <span className="text-transparent bg-gradient-to-br from-[#4dcaff] via-[#9480ff] to-[#bd34fe] bg-clip-text">
-              X
-            </span>
-          </h1>
-          <p className="max-w-screen-md mx-auto text-xl text-gray-600 dark:text-gray-400">
-            A simple, DX-focused Vite + ReactJS + TailwindCSS template to hit
-            the ground running
-          </p>
-          <a
-            href="https://github.com/bkchu/vite-x/generate"
-            rel="noopener noreferrer"
-            className="text-xl inline-block px-12 py-4 mt-24 text-black rounded-full ring-expand bg-gradient-to-br from-[#4dcaff] via-[#9480ff] to-[#bd34fe]"
+    <div className="App">
+      <header className="p-8 flex justify-between items-center">
+        <h1 className="text-orange-400 text-4xl font-medium">givebacks</h1>{' '}
+        <div className="search flex items-center bg-gray-50 border border-gray-300 rounded-lg divide-x">
+          <div className="search-name">
+            <input
+              type="text"
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+              placeholder="Cause Name"
+              className="rounded-l-lg bg-gray-50 text-gray-900 text-sm  focus:ring-orange-400 focus:border-orange-400 block w-full p-2.5 "
+              onKeyDown={handleKeyPress}
+            />
+          </div>
+          <div className="search-city">
+            <input
+              type="text"
+              value={searchCity}
+              onChange={(e) => setSearchCity(e.target.value)}
+              placeholder="City"
+              className="bg-gray-50 text-gray-900 text-sm  focus:ring-orange-400 focus:border-orange-400 block w-full p-2.5"
+              onKeyDown={handleKeyPress}
+            />
+          </div>
+          <div className="search-state">
+            <input
+              type="text"
+              value={searchState}
+              onChange={(e) => setSearchState(e.target.value)}
+              placeholder="State"
+              className=" bg-gray-50 text-gray-900 text-sm  focus:ring-orange-400 focus:border-orange-400 block w-full p-2.5 "
+              onKeyDown={handleKeyPress}
+            />
+          </div>
+          <button
+            onClick={() => {
+              handleSearch();
+            }}
+            className=" mx-2 h-8 w-16 text-orange-400 hover:text-white !border border-orange-400 hover:bg-orange-500 focus:ring-2 focus:outline-none focus:ring-orange-300  rounded-lg text-xs text-center "
           >
-            Use this Template
-          </a>
+            Search
+          </button>
         </div>
+      </header>
+
+      <div className="causes">
+        {causes.length < 1 ? (
+          <h2 className="flex justify-center align-center">
+            No availble causes!
+          </h2>
+        ) : (
+          <>
+            {causesLeft ? (
+              <h2 className="py-4 text-2xl flex justify-center align-center">{`Over ${causes.length} results:`}</h2>
+            ) : (
+              <h2>{`${causes.length} results:`}</h2>
+            )}
+            <div className="cause-cards grid gap-8 grid-cols-4 px-4 ">
+              {causes.map((cause) => {
+                return (
+                  <div
+                    className="single-cause p-4 max-w-sm bg-white rounded-lg border border-gray-200 shadow-md flex flex-col justify-between gap-4"
+                    key={cause.uuid}
+                  >
+                    <div>
+                      <p className="text-xl">{cause.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-md">{cause.address}</p>
+                    </div>
+                    <div>
+                      <a href={cause.details_url} target="_blank">
+                        <button
+                          type="button"
+                          className="focus:outline-none text-white bg-orange-400 hover:bg-orange-500 focus:ring-4 focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:focus:ring-orange-900"
+                        >
+                          Details
+                        </button>
+                      </a>
+                      <a href={cause.join_url} target="_blank">
+                        <button
+                          type="button"
+                          className="focus:outline-none text-white bg-orange-400 hover:bg-orange-500 focus:ring-4 focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:focus:ring-orange-900"
+                        >
+                          Support
+                        </button>
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
-};
+}
 
 export default App;
